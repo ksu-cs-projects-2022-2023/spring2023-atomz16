@@ -37,7 +37,4 @@ for status in tweepy.Cursor(api.search_tweets,q="K-State",
                 "-------------------------------------------------------------------------\n\n")
         print(tweet)
 
-headers = ['tweet_text', 'favorites']
-
-tweet_sample = pd.DataFrame(tweets,columns = headers)
 
