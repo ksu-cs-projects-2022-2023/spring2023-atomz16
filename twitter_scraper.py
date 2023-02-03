@@ -23,7 +23,7 @@ for status in tweepy.Cursor(api.search_tweets,q="K-State",
                             result_type='recent',
                             include_entities=True,
                             tweet_mode='extended', #otherwise it only captures 140 characters
-                            lang="en").items(1000):
+                            lang="en").items(100):
     
     #post_time = status.created_at # tweets posting time
     tweet = status.full_text # gets the tweets texts
