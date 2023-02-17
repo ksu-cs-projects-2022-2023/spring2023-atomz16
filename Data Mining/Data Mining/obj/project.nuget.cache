@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "zczazJKaYhrz+ZMYme5CD4R6hTT3dU1wTCq3Y9bCrSn74M3ndI6aUb9yO8kmdtdlR38yEk4v6M/hoCqVUWsFUA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\19132\\source\\repos\\spring2023-atomz16\\Data Mining\\Data Mining\\Data Mining.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\19132\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\3.1.25\\microsoft.netcore.app.host.win-x64.3.1.25.nupkg.sha512"
+  ],
+  "logs": []
+}
