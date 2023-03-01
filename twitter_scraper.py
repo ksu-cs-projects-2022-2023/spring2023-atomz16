@@ -1,40 +1,41 @@
-import tweepy
-import pandas as pd
+import praw
 import datetime
-import string
-tweets = [] #initialize an empty list
+import threading
 
-api_key = "GoFw50lpwDgecw2UNXhvJOMGy"
-api_secret = "vHc3IhWcqLyEWQT4DPv2GPc6MgDzkWft5BbRnxr75vl7O3GiXL"
+# create a Reddit instance with your app's client ID and secret key
+reddit = praw.Reddit(client_id='bo_GpmWm5LwHuu0WzqFBgA',
+                     client_secret='itpdoMbtNW6x5CxZSsoRuihRcXBQ4A',
+                     user_agent='atomz19')
 
-access_token = "951307038881144833-L2P4HbhgEZCHM41qYWL5B3lNPF3WPUg"
-access_token_secret = "R9mAjVtfXXLyxuv6F1R4tFs7sB5M0dLhBmVMV3ZyaVWRv"
+# define the subreddit you want to scrape
+subreddit = reddit.subreddit('college')
 
-# authentication
-auth = tweepy.OAuthHandler(api_key, api_secret)
-auth.set_access_token(access_token, access_token_secret)
+comments = []
+comments_collected = 0
+def collect_comments(comment):
+        global comments_collected
+        if comment not in comments:
+                comments.append(comment)
+                comments_collected += 1
+                print(str(comments_collected) + " Comment Collected")
 
-api = tweepy.API(auth,wait_on_rate_limit=True)
+def reddit_stream():
+        for comment in subreddit.stream.comments():
+                collect_comments(comment)
 
-print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S").split()[0])
+thread = threading.Thread(target=reddit_stream)
+thread.start()
 
-for status in tweepy.Cursor(api.search_tweets,q="K-State",
-                            until=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S").split()[0], #Twitter will automatically sample the last 7 days of data, and only allows you to get 7-day data
-                            result_type='recent',
-                            include_entities=True,
-                            tweet_mode='extended', #otherwise it only captures 140 characters
-                            lang="en").items(100):
-    
-    #post_time = status.created_at # tweets posting time
-    tweet = status.full_text # gets the tweets texts
-    #screenName = status.user.screen_name
-    likes = status.favorite_count
-    
-    if (likes > 25):
-        tweets.append((tweet, likes))
-        print("\n-------------------------------------------------------------------------\n" +
-                "----------------------------Tweet----------------------------------------\n" +
-                "-------------------------------------------------------------------------\n\n")
-        print(tweet)
+stop_thread = input("To stop collecting comments press Enter")
+thread.join(timeout=1)
+print("You collected " + str(comments_collected) + " comments")
+
+for comment in comments:
+        time = datetime.datetime.fromtimestamp(comment.created_utc)
+        print("-----Posted At " + time.strftime("%Y-%m-%d %H:%M:%S") + "------")
+        print(comment.body)
+
+
+
 
 
