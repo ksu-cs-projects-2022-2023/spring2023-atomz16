@@ -15,7 +15,7 @@ def analyze(post):
     post = post.lower()
     tokens = word_tokenize(post)
     for i in range(0, len(tokens)-1):
-        if tokens[i] == 'kansas' and tokens[i+1] == 'state':
+        if tokens[i] == 'kansas' and tokens[i+1] == 'state' or tokens[i] == 'ksu':
             return True
     return False
 
