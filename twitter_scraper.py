@@ -1,41 +1,121 @@
-import praw
-import datetime
-import threading
+import tweepy
+import json
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import word_tokenize
 
-# create a Reddit instance with your app's client ID and secret key
-reddit = praw.Reddit(client_id='bo_GpmWm5LwHuu0WzqFBgA',
-                     client_secret='itpdoMbtNW6x5CxZSsoRuihRcXBQ4A',
-                     user_agent='atomz19')
+def analyze(post):
+    post = post.lower()
+    tokens = word_tokenize(post)
 
-# define the subreddit you want to scrape
-subreddit = reddit.subreddit('college')
+    context_keywords = {'campus', 'program', 'engineering', 'business', 'education', 'class', 'school', 'agriculture', 'alumni'}
 
-comments = []
-comments_collected = 0
-def collect_comments(comment):
-        global comments_collected
-        if comment not in comments:
-                comments.append(comment)
-                comments_collected += 1
-                print(str(comments_collected) + " Comment Collected")
+    for i in range(1, len(tokens)):
+        if tokens[i] in context_keywords:
+            return True
 
-def reddit_stream():
-        for comment in subreddit.stream.comments():
-                collect_comments(comment)
+    return False
 
-thread = threading.Thread(target=reddit_stream)
-thread.start()
+print("Starting Search")
 
-stop_thread = input("To stop collecting comments press Enter")
-thread.join(timeout=1)
-print("You collected " + str(comments_collected) + " comments")
+# put your credential API information here (do not share your API to the public)
+# API Consumer Key and Secret from Twitter
+api_key = "GoFw50lpwDgecw2UNXhvJOMGy"
+api_secret = "vHc3IhWcqLyEWQT4DPv2GPc6MgDzkWft5BbRnxr75vl7O3GiXL"
 
-for comment in comments:
-        time = datetime.datetime.fromtimestamp(comment.created_utc)
-        print("-----Posted At " + time.strftime("%Y-%m-%d %H:%M:%S") + "------")
-        print(comment.body)
+access_token = "951307038881144833-L2P4HbhgEZCHM41qYWL5B3lNPF3WPUg"
+access_token_secret = "R9mAjVtfXXLyxuv6F1R4tFs7sB5M0dLhBmVMV3ZyaVWRv"
+
+# authentication
+auth = tweepy.OAuthHandler(api_key, api_secret)
+auth.set_access_token(access_token, access_token_secret)
+
+api = tweepy.API(auth,wait_on_rate_limit=True)
+
+tweets = []
+for tweet in tweepy.Cursor(api.search_tweets,q="West AND Virginia AND University",
+                            until='2023-04-26', #Twitter only allows to search tweets from the previous week
+                            result_type='recent',
+                            include_entities=True,
+                            tweet_mode='extended', #otherwise it only captures 140 characters
+                            lang="en").items():
+    tweets.append({
+        'tweet': tweet.full_text,
+        'tweetID': tweet.id_str,
+        'userName': tweet.user.name,
+        'userLocation': tweet.user.location,
+        'postTime': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'retweets': tweet.retweet_count,
+        'likes': tweet.favorite_count,
+    })
+
+for tweet in tweepy.Cursor(api.search_tweets,q="west AND virginia AND university",
+                            until='2023-04-26', #Twitter will automatically sample the last 7 days of data, and only allows you to get 7-day data
+                            result_type='recent',
+                            include_entities=True,
+                            tweet_mode='extended', #otherwise it only captures 140 characters
+                            lang="en").items():
+    tweets.append({
+        'tweet': tweet.full_text,
+        'tweetID': tweet.id_str,
+        'userName': tweet.user.name,
+        'userLocation': tweet.user.location,
+        'postTime': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'retweets': tweet.retweet_count,
+        'likes': tweet.favorite_count,
+    })
 
 
+for tweet in tweepy.Cursor(api.search_tweets,q="WVU OR wvu",
+                            until='2023-04-26', #Twitter will automatically sample the last 7 days of data, and only allows you to get 7-day data
+                            result_type='recent',
+                            include_entities=True,
+                            tweet_mode='extended', #otherwise it only captures 140 characters
+                            lang="en").items():
+    tweets.append({
+        'tweet': tweet.full_text,
+        'tweetID': tweet.id_str,
+        'userName': tweet.user.name,
+        'userLocation': tweet.user.location,
+        'postTime': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'retweets': tweet.retweet_count,
+        'likes': tweet.favorite_count,
+    })
+"""
+for tweet in tweepy.Cursor(api.search_tweets,q="oklahoma AND state",
+                            until='2023-04-26', #Twitter will automatically sample the last 7 days of data, and only allows you to get 7-day data
+                            result_type='recent',
+                            include_entities=True,
+                            tweet_mode='extended', #otherwise it only captures 140 characters
+                            lang="en").items():
+    tweets.append({
+        'tweet': tweet.full_text,
+        'tweetID': tweet.id_str,
+        'userName': tweet.user.name,
+        'userLocation': tweet.user.location,
+        'postTime': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'retweets': tweet.retweet_count,
+        'likes': tweet.favorite_count,
+    })
 
 
+for tweet in tweepy.Cursor(api.search_tweets,q="OKState OR OKstate OR Okstate OR okstate",
+                            until='2023-04-26', #Twitter will automatically sample the last 7 days of data, and only allows you to get 7-day data
+                            result_type='recent',
+                            include_entities=True,
+                            tweet_mode='extended', #otherwise it only captures 140 characters
+                            lang="en").items():
+    tweets.append({
+        'tweet': tweet.full_text,
+        'tweetID': tweet.id_str,
+        'userName': tweet.user.name,
+        'userLocation': tweet.user.location,
+        'postTime': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'retweets': tweet.retweet_count,
+        'likes': tweet.favorite_count,
+    })
+"""
+print(len(tweets))
 
+with open("wvu_posts.json", "w") as outfile:
+    json.dump(tweets, outfile, indent=4)
