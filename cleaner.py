@@ -1,91 +1,82 @@
-import json
-import nltk
-import praw
 import string
-nltk.download('punkt')
+import nltk
 from nltk.tokenize import word_tokenize
 
-reddit = praw.Reddit(client_id='bo_GpmWm5LwHuu0WzqFBgA',
-                     client_secret='itpdoMbtNW6x5CxZSsoRuihRcXBQ4A',
-                     user_agent='atomz19')
+class Cleaner:
 
-def kstate_analyzer(comment):
-    title = comment['submission_title'].lower()
-    title = title.translate(translator)
-    tokens = word_tokenize(title)
+    def __init__(self, counter, subIdSet):
+        self.counter = counter
+        self.subIdSet = subIdSet
 
-    context_keywords = {'kansas', 'manhattan', 'aggieville', 'kc', 'emaw', 'goodnow', 'marlatt', 'wefald', 'derby', 'wildcats', 'wildcat'}
+    # Method for looking up keywords and determining if a message is related to Kansas State
+    def _analyze(self, msgTokens, subNameTokens, redditMsg):
 
-    for i in range(len(tokens)):
-        if tokens[i] in context_keywords:
-            return (True, comment)
+        # Keywords that identify Kansas State
+        context_keywords = {'manhattan', 'aggieville', 'emaw', 'goodnow', 'marlatt', 'wefald', 'derby', 'boyd', 'putnam', 'kstate', 'k-state'}
 
-    if kennesaw_analyzer(comment) == False:
-        return (False, comment)
-    else:
-        return (True, comment)
+        # Keywords that don't identify Kasnas State
+        bad_context_keywords = {'georgia', 'kennesaw', 'game', 'postgame', 'thread', 'nick'}
 
-def kennesaw_analyzer(comment):
-    title = comment['submission_title'].lower()
-    title = title.translate(translator)
-    tokens = word_tokenize(title)
-
-    context_keywords = {'kennesaw', 'georgia', 'msu', 'michigan', 'washington', 'isu', 'iowa'}
-
-    for i in range(len(tokens)):
-        if tokens[i] in context_keywords:
-            return False
-
-    return True
-
-def analyzer(comment):
-    body = comment['body'].lower()
-    body = body.translate(translator)
-    tokens = word_tokenize(body)
-
-    context_keywords = {'kansas', 'manhattan', 'aggieville', 'kc', 'emaw', 'goodnow', 'marlatt', 'wefald', 'derby', 'wildcats', 'wildcat'}
-    bad_context_keywords = {'kennesaw', 'georgia', 'msu', 'michigan', 'washington', 'isu', 'iowa'}
-
-    if comment['submission_id'] not in submission_ids:
-        for i in range(len(tokens)):
-            if tokens[i] in context_keywords:
-                return True
-            elif tokens[i] in bad_context_keywords:
-                if comment['submission_id'] not in submission_ids:
-                    submission_ids.add(comment['submission_id'])
+        for i in range(len(subNameTokens)):
+            if subNameTokens[i] in bad_context_keywords:
+                self.subIdSet.add(redditMsg.subID) # Saves submission id's of bad submission names
                 return False
 
-        return_tuple = kstate_analyzer(comment)
+        for i in range(len(msgTokens)):
+            if msgTokens[i] in bad_context_keywords:
+                return False
 
-        if return_tuple[0] == True:
-            return True
-        else:
-            submission_id = return_tuple[1]['submission_id']
-            if submission_id not in submission_ids:
-                submission_ids.add(submission_id)
-            return False
-    else:
+        for i in range(1, len(msgTokens)):
+            if i == 1:
+                if msgTokens[0] in context_keywords:
+                    return True
+            elif msgTokens[i] in context_keywords:
+                return True
+            elif msgTokens[i - 1] == "kansas" and msgTokens[i] == "state":
+                return True
+
+        for i in range(1, len(subNameTokens)):
+            if i == 1:
+                if subNameTokens[0] in context_keywords:
+                    return True
+            elif subNameTokens[i] in context_keywords:
+                return True
+            elif subNameTokens[i - 1] == "kansas" and subNameTokens[i] == "state":
+                return True
+
         return False
 
-data = []
-with open("reddit_comments.json", "r") as f:
-    data = json.load(f)
+    # Method to clean a Reddit message 
+    def clean(self, redditMsg):
 
-translator = str.maketrans("", "", string.punctuation)
-submission_ids = set()
+        # Counts the number of times we have cleaned a redditMsg
+        self.counter += 1
 
-print("Starting cleaning")
-cleaned_comments = []
-for comment in data[]:
-    if analyzer(comment):
-        cleaned_comments.append(comment)
+        # First check if the submission ID is in the subset of bad submissions
+        if redditMsg.subID in self.subIdSet:
+            return False
 
-recleaned_comments = []
-for comment in cleaned_comments:
-    if comment['submission_id'] not in submission_ids:
-        recleaned_comments.append(comment)
+        # Lower all the characters, remove all punctuation, and tokenize the message
+        msg = redditMsg.msg
+        msg = msg.lower()
+        msg = msg.translate(str.maketrans("", "", string.punctuation))
+        msgTokens = word_tokenize(msg)
 
-with open("training_data.json", "w") as outfile:
-    json.dump(recleaned_comments, outfile, indent=4)
+        subName = redditMsg.subName
+        subName = subName.lower()
+        subName = subName.translate(str.maketrans("", "", string.punctuation))
+        subNameTokens = word_tokenize(subName)
 
-print("Total comments collected after cleaning: " + str(len(recleaned_comments)))
+        # Analyze for keywords
+        if self._analyze(msgTokens, subNameTokens, redditMsg):
+            return True
+        else:
+            self.subIdSet.add(redditMsg.subID)
+            return False
+
+    # Method to check after initial cleaning is done
+    def reclean(self, redditMsg):
+
+        if redditMsg.subID in self.subIdSet:
+            return False
+        return True

@@ -1,22 +1,51 @@
 import json
 from collections import Counter
-import datetime
 
-data = []
-with open('kstate_comments.json', "r") as infile:
-    data = json.load(infile)
+class EngagementAnalyzer:
 
-dates = []
-for comment in data:
-    datetime_obj = datetime.datetime.utcfromtimestamp(comment['created_utc'])
-    formatted_time = datetime_obj.strftime('%m-%d')
-    dates.append(formatted_time)
+    def __init__(self):
+        pass
 
-counter = Counter(dates)
+    def analyze(self, data):
 
-counts = 0
-for element, count in counter.most_common():
-    counts += 1
-    print(str(element) + " " + str(count))
+        user_input = input("Total Network(0), Total Active Users(1), Avg Active Users(2):\nSelection: ")
 
-print(counts)
+        if user_input == "0":
+            self.networkAnalysis(data)
+
+        if user_input == "1":
+            self.activeUsers(data)
+
+        if user_input == "2":
+            self.averageActiveUsers(data)
+
+    # Method for building a network of each individual in a dataset
+    def networkAnalysis(self, data):
+        network = set()
+        for redditMsg in data:
+            network.add(redditMsg.author)
+
+        print("Total people in the network on this file is " + str(len(network)))
+        return len(network)
+
+    # Method for getting active users in a dataset
+    def activeUsers(self, data):
+        users = []
+        for redditMsg in data:
+            users.append(redditMsg.author)
+
+        counter = Counter(users)
+
+        active_users = []
+        for author, count in counter.most_common():
+            if count >= 10: # Number can be changed as fit
+                active_users.append(author)
+
+        print("The total active users for this file is " + str(len(active_users)))
+        return len(active_users)
+
+    # Method for getting the ratio of active users to total users in the dataset
+    def averageActiveUsers(self, data):
+        total_users = self.networkAnalysis(data)
+        active_users = self.activeUsers(data)
+        print("The average active users in this file is " + "{:.2f}".format(active_users/total_users*100))
